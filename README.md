@@ -13,7 +13,7 @@ to extend an existing public project of mine found on GitHub at
 [`manselmi/jaffle-shop`](https://github.com/manselmi/jaffle-shop).
 
 I had created `manselmi/jaffle-shop` while working at the Channing Division
-of Medicine at Mass General Brigham. At the time, I was introducting [dbt
+of Medicine at Mass General Brigham. At the time, I was introducing [dbt
 Core](https://docs.getdbt.com/docs/introduction#dbt-core) to the organization
 and wanted staff to have a simple "hello world"-style project to familiarize
 themselves with dbt. dbt Labs has their own "hello world"-style project on GitHub at
@@ -28,18 +28,18 @@ loading, as is found in `dbt-labs/jaffle_shop_duckdb`.
 
 To add data visualization capability, I decided to utilize [Apache
 Superset](https://superset.apache.org/docs/intro) as it's fairly simple to configure a bare-bones
-installation as part of a Docker Compose stack. I then added the capability to run dbt within
-the Docker Compose stack to simplify execution on Windows, and also to serve the dbt project
-documentation (more on that later).
+installation as part of a Docker Compose stack. I then added the capability to run the existing dbt
+project within the Docker Compose stack to simplify execution on Windows, and also to serve the dbt
+project documentation (more on that later).
 
 ## Project requirements
 
 > [!NOTE]
 > Please note that I implemented the assessment on a macOS laptop with an aarch64 CPU architecture.
-> I tried testing this project with Docker Desktop running within a Windows virtual machine, but
-> apparently nested virtualization is unsupported and so I was unable to run Docker Desktop within
-> Windows. As a result, I was unable to test with Windows. That said, I would expect the Docker
-> Compose stack to run successfully on Windows.
+> The project also runs successfully on Linux. I tried testing this project with Docker Desktop
+> running within a Windows virtual machine, but apparently nested virtualization is unsupported with
+> an aarch64 macOS host, so I was unable to run Docker Desktop and test with Windows. That said, I
+> would expect the Docker Compose stack to run successfully on Windows.
 
 * Application capable of building and running Docker Compose stacks, such as
 
@@ -84,11 +84,12 @@ architecture-beta
 
 * Data ingestion, cleaning and transformation
 
-    * All data ingestion, cleaning and transformation is handled by [dbt
-      Core](https://docs.getdbt.com/docs/introduction#dbt-core).
+    * All data ingestion, cleaning and transformation is managed by [dbt
+      Core](https://docs.getdbt.com/docs/introduction#dbt-core) with
+      [DuckDB](https://duckdb.org/why_duckdb) as the data warehouse.
 
-    * In real-world usage, dbt is typically not responsible for data ingestion — the
-      source data resides in the data warehouse that dbt is connected to. Tools like
+    * In real-world usage, dbt is not responsible for data ingestion — the source data
+      typically resides in the data warehouse that dbt is connecting to. Tools like
       [dlt](https://dlthub.com/docs/intro) are better suited to data ingestion.
 
     * These are small datasets so there's no need to implement incremental processing. However, with
@@ -96,8 +97,8 @@ architecture-beta
       dbt is well-suited for incremental processing and supports multiple [incremental processing
       strategies](https://docs.getdbt.com/docs/build/incremental-strategy).
 
-    * This project does not incorporate an orchestrator like Dagster or Airflow to schedule dbt
-      execution. In real-world use cases, an orchester may be configured to trigger (possibly
+    * This project does not incorporate a workflow orchestrator like Dagster or Airflow to schedule
+      dbt execution. In real-world use cases, an orchester may be configured to trigger (possibly
       incremental) dbt runs on a schedule, or whenever new source data becomes available.
 
 * Storage
@@ -138,12 +139,12 @@ architecture-beta
 * Data consumption by machine learning models
 
     * Columns should be encoded in such a way that machine learning models may be trained on them.
-      For example, the `main.orders` table has one-hot-encoded features such as `is_food_order` and
+      For example, the `main.orders` table one-hot-encodes features such as `is_food_order` and
       `is_drink_order`.
 
 * Scalability and fault tolerance
 
-    * dbt scales with the data warehouse, as is transforms data by running SQL queries
+    * dbt scales with the data warehouse, as it transforms data by running SQL queries
       in the data warehouse. For example, if the data warehouse were Snowflake, in
       [`profiles.yml`](profiles.yml) you would specify the warehouse size and concurrency limit.
 
@@ -152,6 +153,22 @@ architecture-beta
       Vertica kept functioning.
 
 * Tools and technologies
+
+    * DuckDB is a great choice for local data analytics, as it's fast,
+      portable, feature-rich and highly extensible. Here are some [core
+      extensions](https://duckdb.org/docs/extensions/core_extensions.html) I commonly use to ingest
+      a wide variety of data:
+
+        * `aws` for authenticating with AWS S3;
+
+        * `httpfs` for reading/writing files over HTTP(S) and S3 connections;
+
+        * `iceberg` for read-only [Apache Iceberg](https://iceberg.apache.org/docs/nightly/)
+          support;
+
+        * `json` for working with JSON data;
+
+        * `parquet` for reading/writing Parquet files.
 
     * dbt is often a good choice for managing data transformations because
 
@@ -162,9 +179,9 @@ architecture-beta
 
         * dbt supports [data tests](https://docs.getdbt.com/docs/build/data-tests),
           [unit tests](https://docs.getdbt.com/docs/build/unit-tests), [model
-          contracts](https://docs.getdbt.com/docs/collaborate/govern/model-contracts) etc. Model
-          contracts are a nice way to ensure that data engineers aren't violating data contracts
-          agreed upon with downstream data consumers.
+          contracts](https://docs.getdbt.com/docs/collaborate/govern/model-contracts) etc.
+          Model contracts are a nice way to ensure that data engineers aren't violating data
+          specifications agreed upon with downstream data consumers.
 
         * dbt tracks model lineage and automatically builds models in order;
 
@@ -174,12 +191,12 @@ architecture-beta
 
     * Apache Superset was chosen because I could quickly get it running in Docker Compose and create
       some simple charts. There's a good chance there are better free alternatives and there are
-      almost certainly better paid alternatives. My area of expertise is data engineering, so for
-      the data visualization aspect of this assessment I just wanted something that worked.
+      almost certainly better paid alternatives. My area of expertise is backend data engineering,
+      so for the data visualization aspect of this assessment I just wanted something that worked.
 
     * Docker Compose is a nice way to run simple or complex tech stacks locally, and as I don't have
-      a Windows system to test on, Docker Compose is my best bet for this assessment to work on
-      Windows.
+      a Windows environment to test with, Docker Compose is my best bet for this assessment to work
+      on Windows.
 
 ## Project walkthrough
 
@@ -220,6 +237,10 @@ Bringing up the Docker Compose stack also brought up an Apache Superset instance
 
 * username: `admin`
 * password: `admin`
+
+Please see [`docker-compose/dockerfile/superset`](docker-compose/dockerfile/superset) and
+[`docker-compose/entrypoint/superset`](docker-compose/entrypoint/superset) for more on how the
+Apache Superset environment is configured.
 
 After logging in, you should automatically be redirected to the [home
 page](http://localhost:8088/superset/welcome/), where you can click through to the charts
