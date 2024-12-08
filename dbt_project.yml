@@ -1,0 +1,39 @@
+# vim: set ft=yaml :
+#
+# https://docs.getdbt.com/reference/dbt_project.yml
+# https://docs.getdbt.com/reference/dbt-jinja-functions/dbt-project-yml-context
+
+
+name: 'jaffle_shop'
+
+config-version: 2
+version: '0.1.0'
+
+profile: 'jaffle_shop'
+
+model-paths: ['models']
+seed-paths: ['seeds']
+test-paths: ['data-tests']
+analysis-paths: ['analyses']
+macro-paths: ['macros']
+snapshot-paths: ['snapshots']
+
+clean-targets:
+  - 'dbt_packages'
+  - 'target'
+
+flags:
+  require_model_names_without_spaces: true
+  send_anonymous_usage_stats: false
+  source_freshness_run_project_hooks: true
+
+models:
+  jaffle_shop:
+    staging:
+      +schema: 'staging'
+      +materialized: 'table'
+    marts:
+      +materialized: 'table'
+
+vars:
+  'dbt_date:time_zone': 'UTC'

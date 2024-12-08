@@ -1,0 +1,16 @@
+#!/usr/bin/env -S -- bash
+# vim: set ft=bash :
+
+# Stop at any error, treat unset vars as errors and make pipelines exit with a non-zero exit code if
+# any command in the pipeline exits with a non-zero exit code.
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+pushd -- /app > /dev/null
+
+pixi run --no-lockfile-update --no-progress -- dbt build
+cp -- jaffle_shop.duckdb volume/jaffle_shop.duckdb
+pixi run --no-lockfile-update --no-progress -- dbt docs generate
+exec -- pixi run --no-lockfile-update --no-progress -- dbt docs serve --no-browser --host=0.0.0.0

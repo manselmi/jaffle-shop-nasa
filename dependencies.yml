@@ -1,0 +1,12 @@
+# vim: set ft=yaml :
+#
+# https://docs.getdbt.com/docs/build/packages
+
+
+packages:
+  - package: 'calogica/dbt_date'
+    version: '0.10.1'
+  - package: 'dbt-labs/audit_helper'
+    version: '0.12.1'
+  - package: 'dbt-labs/dbt_utils'
+    version: '1.3.0'

@@ -1,0 +1,58 @@
+# vim: set ft=yaml :
+
+
+networks:
+
+  jaffle_shop:
+    driver: 'bridge'
+    name: 'jaffle-shop'
+
+services:
+
+  dbt:
+    build:
+      context: '.'
+      dockerfile: 'docker-compose/dockerfile/dbt'
+    container_name: 'jaffle-shop-dbt'
+    networks:
+      - 'jaffle_shop'
+    ports:
+      - app_protocol: 'http'
+        host_ip: '127.0.0.1'
+        mode: 'host'
+        protocol: 'tcp'
+        published: '8080'
+        target: 8080
+    restart: 'always'
+    stop_signal: 'SIGINT'
+    volumes:
+      - source: 'docker-compose/volume'
+        target: '/app/volume'
+        type: 'bind'
+
+  superset:
+    build:
+      context: '.'
+      dockerfile: 'docker-compose/dockerfile/superset'
+    container_name: 'jaffle-shop-superset'
+    depends_on:
+      - 'dbt'
+    environment:
+      SUPERSET_ADMIN: '${SUPERSET_ADMIN}'
+      SUPERSET_PASSWORD: '${SUPERSET_PASSWORD}'
+      SUPERSET_SECRET_KEY: '${SUPERSET_SECRET_KEY}'
+    networks:
+      - 'jaffle_shop'
+    ports:
+      - app_protocol: 'http'
+        host_ip: '127.0.0.1'
+        mode: 'host'
+        protocol: 'tcp'
+        published: '8088'
+        target: 8088
+    restart: 'always'
+    stop_signal: 'SIGINT'
+    volumes:
+      - source: 'docker-compose/volume'
+        target: '/app/volume'
+        type: 'bind'

@@ -1,0 +1,39 @@
+#!/usr/bin/env -S -- bash
+# vim: set ft=bash :
+
+# Stop at any error, treat unset vars as errors and make pipelines exit with a non-zero exit code if
+# any command in the pipeline exits with a non-zero exit code.
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+pushd -- /app > /dev/null
+
+if [[ ! -f /app/superset_home/superset.db ]]; then
+  superset fab create-admin \
+    --email foo@bar.baz \
+    --firstname Foo \
+    --lastname Bar \
+    --username "${SUPERSET_ADMIN}" \
+    --password "${SUPERSET_PASSWORD}"
+  superset db upgrade
+  superset init
+  superset set_database_uri \
+    --database_name jaffle_shop \
+    --uri duckdb:///volume/jaffle_shop.duckdb
+  superset import-dashboards --path /app/volume/dashboard_export.zip --username "${SUPERSET_ADMIN}"
+fi
+
+exec -- gunicorn \
+  --access-logfile '-' \
+  --bind '0.0.0.0:8088' \
+  --error-logfile '-' \
+  --limit-request-field_size 0 \
+  --limit-request-line 0 \
+  --threads 20 \
+  --timeout 60 \
+  --worker-class gthread \
+  --workers 1 \
+  -- \
+  'superset.app:create_app()'

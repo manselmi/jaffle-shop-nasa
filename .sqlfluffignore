@@ -1,0 +1,5 @@
+.pixi/
+dbt_packages/
+docker-compose/
+macros/
+target/

@@ -1,0 +1,135 @@
+# vim: set ft=yaml :
+#
+# https://docs.getdbt.com/docs/build/sources
+# https://docs.getdbt.com/reference/source-properties
+# https://docs.getdbt.com/reference/resource-properties/freshness
+
+
+sources:
+
+  - name: ecom
+    description: E-commerce data for the Jaffle Shop
+    config:
+      external_location: |
+        read_csv('jaffle-data/${name}.csv', header = true)
+      formatter: template
+    freshness:
+      warn_after:
+        count: 24
+        period: hour
+    tables:
+
+      - name: raw_customers
+        description: One record per person who has purchased one or more items
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'id': 'uuid',
+                'name': 'varchar',
+              }
+            )
+        freshness: null
+
+      - name: raw_items
+        description: Items included in an order
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'id': 'uuid',
+                'order_id': 'uuid',
+                'sku': 'varchar',
+              }
+            )
+        freshness: null
+
+      - name: raw_orders
+        description: One record per order (consisting of one or more order items)
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'id': 'uuid',
+                'customer': 'uuid',
+                'ordered_at': 'timestamp',
+                'store_id': 'uuid',
+                'subtotal': 'bigint',
+                'tax_paid': 'bigint',
+                'order_total': 'bigint',
+              }
+            )
+        # We assume that ordered_at is already UTC, so no need to convert to UTC here.
+        loaded_at_field: ordered_at
+
+      - name: raw_products
+        description: One record per SKU for items sold in stores
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'sku': 'varchar',
+                'name': 'varchar',
+                'type': 'varchar',
+                'price': 'bigint',
+                'description': 'varchar',
+              }
+            )
+        freshness: null
+
+      - name: raw_stores
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'id': 'uuid',
+                'name': 'varchar',
+                'opened_at': 'timestamp',
+                'tax_rate': 'decimal(5,4)',
+              }
+            )
+        # We assume that opened_at is already UTC, so no need to convert to UTC here.
+        loaded_at_field: opened_at
+
+      - name: raw_supplies
+        description: One record per supply per SKU of items sold in stores
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'id': 'varchar',
+                'name': 'varchar',
+                'cost': 'bigint',
+                'perishable': 'boolean',
+                'sku': 'varchar',
+              }
+            )
+        freshness: null
+
+      - name: raw_tweets
+        config:
+          external_location: |
+            read_csv(  -- noqa: PRS
+              'jaffle-data/${name}.csv',
+              header = true,
+              types = {
+                'id': 'uuid',
+                'user_id': 'uuid',
+                'tweeted_at': 'timestamp',
+                'content': 'varchar',
+              }
+            )
+        # We assume that tweeted_at is already UTC, so no need to convert to UTC here.
+        loaded_at_field: tweeted_at

@@ -1,0 +1,30 @@
+FROM ghcr.io/prefix-dev/pixi:0.39.0-bookworm
+LABEL maintainer="Mike Anselmi <git@manselmi.com>"
+
+# Change working directory.
+WORKDIR /app
+
+# Install pixi requirements.
+COPY ["pyproject.toml", "."]
+COPY ["pixi.lock", "."]
+RUN ["pixi", "install", "--frozen"]
+
+# Install dbt requirements.
+COPY ["dbt_project.yml", "."]
+COPY ["profiles.yml", "."]
+COPY ["dependencies.yml", "."]
+COPY ["package-lock.yml", "."]
+RUN ["pixi", "run", "--no-lockfile-update", "--no-progress", "--", "dbt-deps"]
+
+# Install app.
+COPY ["analyses/", "analyses/"]
+COPY ["data-tests/", "data-tests/"]
+COPY ["jaffle-data/", "jaffle-data/"]
+COPY ["macros/", "macros/"]
+COPY ["models/", "models/"]
+COPY ["seeds/", "seeds/"]
+
+# Configure default behavior.
+COPY ["docker-compose/entrypoint/dbt", "/entrypoint"]
+ENTRYPOINT ["/entrypoint"]
+EXPOSE 8080/tcp

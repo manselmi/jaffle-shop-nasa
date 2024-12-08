@@ -1,0 +1,7 @@
+*.duckdb
+.git*
+.pixi
+dbt_packages
+docker-compose/dockerfile
+docker-compose/volume
+logs

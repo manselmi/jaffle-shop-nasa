@@ -1,0 +1,51 @@
+models:
+  - name: stg_locations
+    description: List of open locations with basic cleaning and transformation applied, one row per location.
+    columns:
+      - name: location_id
+        description: The unique key for each location.
+        data_tests:
+          - not_null
+          - unique
+
+unit_tests:
+  - name: test_does_location_opened_at_trunc_to_date
+    description: "Check that opened_at timestamp is properly truncated to a date."
+    model: stg_locations
+    given:
+      - input: source('ecom', 'raw_stores')
+        format: sql
+        rows: |
+          with T (id, name, opened_at, tax_rate) as (
+            select
+              '2de6e25f-ed6d-4c7c-abb9-8ea360bb5194',
+              'Vice City',
+              '2016-09-01T00:00:00',
+              '0.2'
+            union all
+            select
+              'c92349bc-cc82-4640-b9ef-d8fc42fdadf8',
+              'San Andreas',
+              '2079-10-27T23:59:59.9999',
+              '0.1'
+          )
+          select
+            T.id::uuid as id,
+            T.name,
+            T.opened_at::timestamp as opened_at,
+            T.tax_rate::decimal(5,4) as tax_rate
+          from T
+    expect:
+      rows:
+        - {
+            location_id: "2de6e25f-ed6d-4c7c-abb9-8ea360bb5194",
+            location_name: "Vice City",
+            tax_rate: 0.2,
+            opened_date: "2016-09-01",
+          }
+        - {
+            location_id: "c92349bc-cc82-4640-b9ef-d8fc42fdadf8",
+            location_name: "San Andreas",
+            tax_rate: 0.1,
+            opened_date: "2079-10-27",
+          }

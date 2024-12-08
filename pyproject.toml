@@ -1,0 +1,188 @@
+# vim: set ft=toml :
+
+
+[project]
+name = 'jaffle-shop'
+
+
+[tool.pixi.project]
+channels = ['conda-forge']
+platforms = [
+  'linux-64',
+  'linux-aarch64',
+  'osx-64',
+  'osx-arm64',
+]
+
+[tool.pixi.dependencies]
+python = { version = '>=3.12.8,<3.13' }
+
+[tool.pixi.pypi-dependencies]
+dbt-core = { version = '>=1.8.9,<1.9' }
+dbt-duckdb = { version = '>=1.9.1' }
+dbt-metricflow = { version = '>=0.7.1' }
+jafgen = { version = '>=0.4.14' }
+
+[tool.pixi.tasks]
+all = { depends-on = [
+  'dbt-deps',
+  'dbt-run',
+  'dbt-test',
+  'mf',
+] }
+jafgen = { cmd = ['jafgen'], outputs = ['jaffle-data/*.csv'] }
+dbt-deps = { cmd = ['dbt', 'deps'] }
+dbt-run = { cmd = ['dbt', 'run'], depends-on = ['jafgen'] }
+dbt-test = { cmd = ['dbt', 'test'] }
+mf = { depends-on = ['mf-health-checks', 'mf-validate-configs'] }
+mf-health-checks = { cmd = ['mf', 'health-checks'] }
+mf-validate-configs = { cmd = ['mf', 'validate-configs', '--show-all', '--verbose-issues'] }
+
+[tool.pixi.environments]
+default = { solve-group = 'default' }
+lint = { features = ['lint'], solve-group = 'default' }
+
+[tool.pixi.feature.lint.pypi-dependencies]
+pre-commit = { version = '>=4.0.1' }
+pre-commit-hooks = { version = '>=5.0.0' }
+ruff = { version = '>=0.8.2' }
+sqlfluff-templater-dbt = { version = '>=3.2.5' }
+
+[tool.pixi.feature.lint.tasks]
+lint = { depends-on = ['pre-commit-run'] }
+pre-commit-run = { cmd = ['pre-commit', 'run', '--all-files'] }
+pre-commit-install = { depends-on = [
+  '_pre-commit-install-commit-msg',
+  '_pre-commit-install-post-checkout',
+  '_pre-commit-install-post-commit',
+  '_pre-commit-install-post-merge',
+  '_pre-commit-install-post-rewrite',
+  '_pre-commit-install-pre-commit',
+  '_pre-commit-install-pre-merge-commit',
+  '_pre-commit-install-pre-push',
+  '_pre-commit-install-pre-rebase',
+  '_pre-commit-install-prepare-commit-msg',
+] }
+_pre-commit-install-commit-msg = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'commit-msg',
+] }
+_pre-commit-install-post-checkout = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'post-checkout',
+] }
+_pre-commit-install-post-commit = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'post-commit',
+] }
+_pre-commit-install-post-merge = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'post-merge',
+] }
+_pre-commit-install-post-rewrite = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'post-rewrite',
+] }
+_pre-commit-install-pre-commit = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'pre-commit',
+] }
+_pre-commit-install-pre-merge-commit = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'pre-merge-commit',
+] }
+_pre-commit-install-pre-push = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'pre-push',
+] }
+_pre-commit-install-pre-rebase = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'pre-rebase',
+] }
+_pre-commit-install-prepare-commit-msg = { cmd = [
+  'pre-commit', 'install', '-f', '-t', 'prepare-commit-msg',
+] }
+
+
+[tool.ruff]
+line-length = 100
+target-version = 'py312'
+
+[tool.ruff.lint]
+dummy-variable-rgx = '^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$'
+fixable = ['ALL']
+ignore = [
+  'ANN',      # mypy handles our type annotations
+  'COM812',   # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'COM819',   # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'CPY',      # not publishing publicly
+  'D',        # we prefer our own docstring style
+  'E111',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'E114',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'E117',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'ERA',      # do not remove commented-out code
+  'ISC001',   # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'ISC002',   # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'Q000',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'Q001',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'Q002',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'Q003',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  'TCH',      # TYPE_CHECKING blocks break autodocs
+  'W191',     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+]
+select = ['ALL']
+unfixable = []
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = []
+known-local-folder = []
+known-third-party = []
+
+[tool.ruff.lint.per-file-ignores]
+'test/**/*.py' = [
+  'INP001',
+]
+'__init__.py' = [
+  'F401',
+]
+
+
+[tool.sqlfluff.core]
+dialect = 'duckdb'
+encoding = 'utf-8'
+exclude_rules = [
+  'ST06',
+]
+large_file_skip_byte_limit = 0
+max_line_length = 100
+sql_file_exts = '.sql'
+templater = 'dbt'
+
+[tool.sqlfluff.indentation]
+tab_space_size = 4
+
+[tool.sqlfluff.layout.type.comma]
+line_position = 'trailing'
+spacing_before = 'touch'
+
+[tool.sqlfluff.rules.aliasing.column]
+aliasing = 'explicit'
+
+[tool.sqlfluff.rules.aliasing.expression]
+allow_scalar = false
+
+[tool.sqlfluff.rules.aliasing.length]
+min_alias_length = 1
+
+[tool.sqlfluff.rules.aliasing.table]
+aliasing = 'explicit'
+
+[tool.sqlfluff.rules.ambiguous.column_references]
+group_by_and_order_by_style = 'implicit'
+
+[tool.sqlfluff.rules.capitalisation.functions]
+capitalisation_policy = 'lower'
+
+[tool.sqlfluff.rules.capitalisation.identifiers]
+extended_capitalisation_policy = 'lower'
+
+[tool.sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = 'lower'
+
+[tool.sqlfluff.rules.capitalisation.literals]
+capitalisation_policy = 'lower'
+
+[tool.sqlfluff.templater.dbt]
+profiles_dir = '.'

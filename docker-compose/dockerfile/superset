@@ -1,0 +1,15 @@
+FROM docker.io/apache/superset:4.1.1
+LABEL maintainer="Mike Anselmi <git@manselmi.com>"
+
+# Install Python requirements.
+WORKDIR /app/superset_home
+COPY --chown=superset:superset ["docker-compose/superset/requirements.txt", "requirements.txt"]
+USER root
+RUN python -m pip install --no-deps --root-user-action=ignore -r requirements.txt && \
+    python -m pip check
+USER superset
+WORKDIR /app
+
+# Configure default behavior.
+COPY --chown=superset:superset ["docker-compose/entrypoint/superset", "/entrypoint"]
+ENTRYPOINT ["/entrypoint"]

@@ -1,0 +1,6 @@
+# vim: set ft=gitignore :
+
+
+*
+!.gitignore
+!dashboard_export.zip
